@@ -7,10 +7,23 @@ const UploadPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [fileContent, setFileContent] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const selectedFile = event.target.files[0];
+    setFile(selectedFile);
     setError('');
+
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      setFileContent(text);
+      console.log('File content:', text);
+    };
+    reader.readAsText(selectedFile);
   };
 
   const handleDifficultyChange = (event) => {
@@ -22,17 +35,16 @@ const UploadPage = () => {
     event.preventDefault();
     if (!file || !difficulty) {
       setError('Please select a file and difficulty level');
-      navigate('/summary', { state: { summary: 'No file or difficulty selected. Please try again.' } });
       return;
     }
-
+  
     setLoading(true);
     setError('');
-
+  
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('difficulty', difficulty);
-
+  
     try {
       const response = await fetch('http://your-backend-api/upload', {
         method: 'POST',
@@ -42,20 +54,31 @@ const UploadPage = () => {
       if (!response.ok) {
         throw new Error('Server responded with an error');
       }
-
+  
+      setLoading(false);
+      setIsProcessing(true); // Start processing state
+  
       const data = await response.json();
       navigate('/summary', { state: { summary: data.summary } });
     } catch (error) {
       console.error('Error uploading file:', error);
       setError('An error occurred while uploading the file. Please try again.');
-      navigate('/summary', { state: { summary: 'Error occurred during file upload. Please try again.' } });
-    } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
-
+  const LoadingScreen = () => (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg shadow-xl text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mx-auto mb-4"></div>
+        <p className="text-xl font-semibold text-gray-700">Processing your document...</p>
+        <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+      </div>
+    </div>
+  );
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 flex items-center justify-center p-4">
+        {isProcessing && <LoadingScreen />}
       <div className="max-w-md w-full bg-white bg-opacity-95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden transform hover:scale-102 transition-all duration-300 ease-in-out">
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8">
           <h1 className="text-4xl font-bold text-center text-white drop-shadow-lg">Upload PDF</h1>

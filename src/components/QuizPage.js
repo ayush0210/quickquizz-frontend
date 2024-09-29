@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../index.css'; // Tailwind styles
 
 const QuizPage = () => {
+    const navigate = useNavigate();
     const quizData = {
         "questions": [
             {
@@ -122,11 +124,15 @@ const QuizPage = () => {
     const [score, setScore] = useState(0);
     const [showResults, setShowResults] = useState(false);
     const [results, setResults] = useState([]);
-    const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes in seconds
-    const [timerActive, setTimerActive] = useState(false); // Track if the timer is active
+    const [timeRemaining, setTimeRemaining] = useState(60); // 60 seconds
+    const [timerActive, setTimerActive] = useState(true);
+    const handleFinishQuiz = useCallback(() => {
+        setShowResults(true);
+        setTimerActive(false); // Stop the timer when the quiz is finished
+    }, []);
+
 
     useEffect(() => {
-        // Start the timer when the quiz starts
         if (timerActive) {
             const timerId = setInterval(() => {
                 setTimeRemaining((prevTime) => {
@@ -141,7 +147,7 @@ const QuizPage = () => {
 
             return () => clearInterval(timerId); // Cleanup on unmount
         }
-    }, [timerActive]);
+    }, [timerActive, handleFinishQuiz]);
 
     const handleStartQuiz = () => {
         setTimerActive(true); // Start the timer when the quiz begins
@@ -178,19 +184,14 @@ const QuizPage = () => {
         }
     };
 
-    const handleFinishQuiz = () => {
-        setShowResults(true);
-        setTimerActive(false); // Stop the timer when the quiz is finished
-    };
-
     const handleRestartQuiz = () => {
         setCurrentQuestion(0);
         setScore(0);
         setSelectedOption(null);
         setShowResults(false);
         setResults([]);
-        setTimeRemaining(180); // Reset timer for the new quiz
-        setTimerActive(true); // Start the timer again
+        setTimeRemaining(60); // Reset timer for the new quiz
+        setTimerActive(true); // Ensure the timer is active
     };
 
     // Format the remaining time as minutes and seconds
@@ -201,7 +202,10 @@ const QuizPage = () => {
     };
 
     // Calculate the progress percentage
-    const progressPercentage = ((180 - timeRemaining) / 180) * 100;
+    const progressPercentage = ((60 - timeRemaining) / 60) * 100;
+    const handleExit = () => {
+        navigate('/UploadPage');
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 p-5 flex items-center justify-center">
@@ -212,19 +216,19 @@ const QuizPage = () => {
                             Question {currentQuestion + 1}/{quizData.questions.length}
                         </h1>
                         <p className="mb-6 text-lg">{quizData.questions[currentQuestion].question}</p>
-
                         <div className="mb-4">
-                            <p className={`mb-2 text-lg font-bold ${timeRemaining < 60 ? 'text-red-600' : 'text-black'}`}>
-                                Time Remaining: {formatTime(timeRemaining)} {/* Display timer */}
+                            <p className={`mb-2 text-lg font-bold ${timeRemaining <= 30 ? 'text-red-600' : 'text-black'}`}>
+                                Time Remaining: {formatTime(timeRemaining)}
                             </p>
                             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-blue-500 transition-all duration-1000"
-                                    style={{ width: `${progressPercentage}%` }} // Progress bar
+                                    className={`h-full transition-all duration-1000 ${
+                                        timeRemaining <= 30 ? 'bg-red-500' : 'bg-blue-500'
+                                    }`}
+                                    style={{ width: `${progressPercentage}%` }}
                                 />
                             </div>
                         </div>
-
                         {quizData.questions[currentQuestion].options.map((option, index) => (
                             <button
                                 key={index}
@@ -234,7 +238,6 @@ const QuizPage = () => {
                                 {option}
                             </button>
                         ))}
-
                         <div className="mt-4 flex justify-between">
                             <button
                                 onClick={handleNextQuestion}
@@ -269,9 +272,16 @@ const QuizPage = () => {
                     </>
                 )}
             </div>
+            {showResults && (
+                <button
+                    onClick={handleExit}
+                    className="fixed bottom-4 left-4 p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                    Exit
+                </button>
+            )}
         </div>
     );
 };
 
 export default QuizPage;
-
