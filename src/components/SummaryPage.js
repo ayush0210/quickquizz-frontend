@@ -8,6 +8,7 @@ const SummaryPage = () => {
   const [summaryData, setSummaryData] = useState([]);
   const [doubt, setDoubt] = useState('');
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+  const [doubtResponse, setDoubtResponse] = useState(null);
 
   useEffect(() => {
     console.log("Location state:", location.state);
@@ -52,8 +53,33 @@ const SummaryPage = () => {
     navigate('/quiz', { state: { quiz: location.state.quiz } });
   };
 
-  const handleAskDoubt = () => {
-    console.log("Doubt submitted:", doubt);
+  const handleAskDoubt = async () => {
+    if (!doubt.trim()) {
+      console.log("No doubt entered");
+      return;
+    }
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/ask_doubt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ doubt }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+  
+      const data = await response.json();
+      setDoubtResponse(data.response);
+      console.log("Doubt response:", data.response);
+    } catch (error) {
+      console.error('Error asking doubt:', error);
+      setDoubtResponse('An error occurred while processing your doubt.');
+    }
+  
     setDoubt('');
     resetTranscript();
   };
@@ -82,14 +108,14 @@ const SummaryPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 py-12 px-4 sm:px-6 lg:px-8 relative">
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-4xl font-bold text-center text-white mb-12">Summary</h1>
-      {summaryData && summaryData.length > 0 ? (
-        renderSummary()
-      ) : (
-        <p className="text-white text-center">Loading summary data...</p>
-      )}
-    </div>
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-4xl font-bold text-center text-white mb-12">Summary</h1>
+        {summaryData && summaryData.length > 0 ? (
+          renderSummary()
+        ) : (
+          <p className="text-white text-center">Loading summary data...</p>
+        )}
+      </div>
       
       {/* Ask Doubt Section */}
       <div className="fixed bottom-8 left-8 flex flex-col space-y-4 w-64">
@@ -119,7 +145,21 @@ const SummaryPage = () => {
           </button>
         </div>
       </div>
-
+  
+      {/* Doubt Response Section */}
+      {doubtResponse && (
+        <div className="fixed bottom-8 left-8 right-8 bg-white rounded-lg shadow-md p-4 max-w-2xl mx-auto">
+          <h3 className="text-lg font-semibold mb-2">Response to your doubt:</h3>
+          <p className="text-gray-700">{doubtResponse}</p>
+          <button
+            onClick={() => setDoubtResponse(null)}
+            className="mt-2 text-sm text-blue-500 hover:text-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      )}
+  
       {/* Start Quiz Button */}
       <button
         onClick={handleStartQuiz}
