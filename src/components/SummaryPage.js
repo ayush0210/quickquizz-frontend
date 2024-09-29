@@ -1,28 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 const SummaryPage = () => {
   const navigate = useNavigate();
-  const [isListening, setIsListening] = useState(false);
+  const location = useLocation();
+  const [summaryData, setSummaryData] = useState([]);
   const [doubt, setDoubt] = useState('');
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
-  // Dummy data for testing the UI
-  const dummyData = [
-    {
-      title: "INTRODUCTION",
-      content: "Cricket performance is measured using indices and models, including batting, bowling, and wicket-keeping. Team strategies, such as optimal scoring rates and batting strategies, also play a key role."
-    },
-    {
-      title: "CRICKET PERFORMANCE INDICATORS, STRATEGIES AND DATA MODELLING",
-      content: "Cricket, besides batting and bowling, also places importance on wicket-keeping and fielding. Various researchers have proposed indices and models to measure these attributes."
-    },
-    {
-      title: "CRICKET STATISTICS AND PERFORMANCE ANALYSIS",
-      content: "A book titled 'Primer of Statistics' employs cricket data to explain statistical concepts in a pioneering attempt. It specifically demonstrates the use of standard deviation in analyzing batting performance."
+  useEffect(() => {
+    if (location.state && location.state.summary) {
+      setSummaryData(location.state.summary);
     }
-  ];
+  }, [location.state]);
 
   const renderContent = (content) => {
     return content.split('\n').map((paragraph, index) => (
@@ -31,7 +22,11 @@ const SummaryPage = () => {
   };
 
   const renderSummary = () => {
-    return dummyData.map((item, index) => (
+    if (summaryData.length === 0) {
+      return <p>Loading summary...</p>;
+    }
+
+    return summaryData.map((item, index) => (
       <div key={index} className="mb-8 p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold mb-4 text-indigo-700">{item.title}</h2>
         <div className="text-gray-700">
@@ -42,14 +37,15 @@ const SummaryPage = () => {
   };
 
   const handleStartQuiz = () => {
-    navigate('/quiz');
+    navigate('/quiz', { state: { quiz: location.state.quiz } });
   };
 
   const handleAskDoubt = () => {
     console.log("Doubt submitted:", doubt);
-    setDoubt(''); // Clear the input after submission
-    resetTranscript(); // Reset the transcript after submitting the doubt
+    setDoubt('');
+    resetTranscript();
   };
+
   const handleVoiceInput = () => {
     if (listening) {
       SpeechRecognition.stopListening();
@@ -57,15 +53,17 @@ const SummaryPage = () => {
       SpeechRecognition.startListening({ continuous: true });
     }
   };
+
   useEffect(() => {
     setDoubt(transcript);
   }, [transcript]);
 
   useEffect(() => {
     if (!listening) {
-      resetTranscript(); // Reset transcript when not listening
+      resetTranscript();
     }
   }, [listening, resetTranscript]);
+
   if (!browserSupportsSpeechRecognition) {
     return <span>Browser doesn't support speech recognition.</span>;
   }
@@ -96,7 +94,7 @@ const SummaryPage = () => {
           <button
             onClick={handleVoiceInput}
             className={`bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
-              isListening ? 'animate-pulse' : ''
+              listening ? 'animate-pulse' : ''
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
