@@ -37,14 +37,18 @@ const UploadPage = () => {
       setError('Please select a file and difficulty level');
       return;
     }
-  
+
     setLoading(true);
     setError('');
-  
+
+    // Show loader for 2 seconds
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('difficulty', difficulty);
-  
+
     try {
       const response = await fetch('http://your-backend-api/upload', {
         method: 'POST',
@@ -54,31 +58,28 @@ const UploadPage = () => {
       if (!response.ok) {
         throw new Error('Server responded with an error');
       }
-  
-      setLoading(false);
-      setIsProcessing(true); // Start processing state
-  
+
       const data = await response.json();
       navigate('/summary', { state: { summary: data.summary } });
     } catch (error) {
       console.error('Error uploading file:', error);
       setError('An error occurred while uploading the file. Please try again.');
+      navigate('/summary', { state: { summary: 'Error occurred during file upload. Please try again.' } });
+    } finally {
       setLoading(false);
       setIsProcessing(false);
     }
   };
-  const LoadingScreen = () => (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mx-auto mb-4"></div>
-        <p className="text-xl font-semibold text-gray-700">Processing your document...</p>
-        <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
-      </div>
-    </div>
-  );
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 flex items-center justify-center p-4">
-        {isProcessing && <LoadingScreen />}
+        {isProcessing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mx-auto"></div>
+            <p className="mt-4 text-center text-gray-700">Processing...</p>
+          </div>
+        </div>
+      )}
       <div className="max-w-md w-full bg-white bg-opacity-95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden transform hover:scale-102 transition-all duration-300 ease-in-out">
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8">
           <h1 className="text-4xl font-bold text-center text-white drop-shadow-lg">Upload PDF</h1>
@@ -135,25 +136,26 @@ const UploadPage = () => {
             </p>
           )}
           <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Uploading...
-              </span>
-            ) : (
-              'Next'
-            )}
-          </button>
+          type="submit"
+          disabled={loading || isProcessing}
+          className={`w-full bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl ${
+            (loading || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {loading || isProcessing ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </span>
+          ) : (
+            'Next'
+          )}
+        </button>
         </form>
+        {/* ... */}
       </div>
     </div>
   );
