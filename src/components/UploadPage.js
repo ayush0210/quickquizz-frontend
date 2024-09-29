@@ -37,45 +37,51 @@ const UploadPage = () => {
       setError('Please select a file and difficulty level');
       return;
     }
-
+  
     setLoading(true);
-    setError('');
-
-    // Show loader for 2 seconds
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
+    setError('');
+  
     const formData = new FormData();
     formData.append('pdf', file);
-
+    formData.append('difficulty', difficulty);
+  
     try {
-      const response = await fetch('http://localhost:5000/api/upload_file', {
+      // First API call to upload the file
+      const uploadResponse = await fetch('http://localhost:5000/api/upload_file', {
         method: 'POST',
         body: formData,
       });
-
-      if (!response.ok) {
+  
+      if (!uploadResponse.ok) {
         throw new Error('Server responded with an error. File not uploaded');
-      } else {
-        const response = await fetch('http://localhost:5000/api/get_learning_path', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(difficulty),
-        });
-
-        if (!response.ok) {
-          throw new Error('Server responded with an error');
-        }
       }
-
-      const data = await response.json();
-      navigate('/summary', { state: { summary: data.summary } });
+  
+      // Second API call to get the learning path
+      const learningPathResponse = await fetch('http://localhost:5000/api/get_learning_path', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ difficulty }),
+      });
+  
+      if (!learningPathResponse.ok) {
+        throw new Error('Server responded with an error when getting learning path');
+      }
+  
+      const data = await learningPathResponse.json();
+      console.log('Received data:', data); // Log the received data
+  
+      if (data && data.summary && data.quiz) {
+        navigate('/summary', { state: { summary: data.summary, quiz: data.quiz }});
+      } else {
+        throw new Error('Received data is not in the expected format');
+      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setError('An error occurred while uploading the file. Please try again.');
-      navigate('/summary', { state: { summary: 'Error occurred during file upload. Please try again.' } });
+      console.error('Error:', error);
+      setError('An error occurred. Please try again.');
+      navigate('/summary', { state: { summary: 'Error occurred. Please try again.' } });
     } finally {
       setLoading(false);
       setIsProcessing(false);

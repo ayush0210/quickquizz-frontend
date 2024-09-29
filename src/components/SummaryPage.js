@@ -10,32 +10,44 @@ const SummaryPage = () => {
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
   useEffect(() => {
+    console.log("Location state:", location.state);
     if (location.state && location.state.summary) {
+      console.log("Received summary data:", location.state.summary);
       setSummaryData(location.state.summary);
+    } else {
+      console.log("No summary data received in location state");
     }
   }, [location.state]);
 
-  const renderContent = (content) => {
+  function renderContent(content) {
     return content.split('\n').map((paragraph, index) => (
       <p key={index} className="mb-4">{paragraph}</p>
     ));
-  };
+  }
 
   const renderSummary = () => {
-    if (summaryData.length === 0) {
-      return <p>Loading summary...</p>;
+    console.log("Current summaryData:", summaryData);
+    if (!summaryData || summaryData.length === 0) {
+      return <p className="text-white">No summary data available.</p>;
     }
-
-    return summaryData.map((item, index) => (
-      <div key={index} className="mb-8 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4 text-indigo-700">{item.title}</h2>
-        <div className="text-gray-700">
-          {renderContent(item.content)}
+  
+    return summaryData.map((item, index) => {
+      console.log("Rendering summary item:", item);
+      if (!item || !item.title || !item.content) {
+        console.error("Invalid summary item:", item);
+        return null;
+      }
+  
+      return (
+        <div key={index} className="mb-8 p-6 bg-white rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4 text-indigo-700">{item.title}</h2>
+          <div className="text-gray-700">
+            {renderContent(item.content)}
+          </div>
         </div>
-      </div>
-    ));
+      );
+    });
   };
-
   const handleStartQuiz = () => {
     navigate('/quiz', { state: { quiz: location.state.quiz } });
   };
@@ -70,10 +82,14 @@ const SummaryPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 py-12 px-4 sm:px-6 lg:px-8 relative">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-white mb-12">Summary</h1>
-        {renderSummary()}
-      </div>
+    <div className="max-w-3xl mx-auto">
+      <h1 className="text-4xl font-bold text-center text-white mb-12">Summary</h1>
+      {summaryData && summaryData.length > 0 ? (
+        renderSummary()
+      ) : (
+        <p className="text-white text-center">Loading summary data...</p>
+      )}
+    </div>
       
       {/* Ask Doubt Section */}
       <div className="fixed bottom-8 left-8 flex flex-col space-y-4 w-64">
