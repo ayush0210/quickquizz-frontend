@@ -54,6 +54,10 @@ const SummaryPage = () => {
   };
 
   const handleAskDoubt = async () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+    }
+
     if (!doubt.trim()) {
       console.log("No doubt entered");
       return;
