@@ -23,7 +23,7 @@ const UploadPage = () => {
       setFileContent(text);
       console.log('File content:', text);
     };
-    reader.readAsText(selectedFile);
+    reader.readAsArrayBuffer(selectedFile);
   };
 
   const handleDifficultyChange = (event) => {
@@ -47,16 +47,27 @@ const UploadPage = () => {
 
     const formData = new FormData();
     formData.append('pdf', file);
-    formData.append('difficulty', difficulty);
 
     try {
-      const response = await fetch('http://your-backend-api/upload', {
+      const response = await fetch('http://localhost:5000/api/upload_file', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
-        throw new Error('Server responded with an error');
+        throw new Error('Server responded with an error. File not uploaded');
+      } else {
+        const response = await fetch('http://localhost:5000/api/get_learning_path', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(difficulty),
+        });
+
+        if (!response.ok) {
+          throw new Error('Server responded with an error');
+        }
       }
 
       const data = await response.json();
